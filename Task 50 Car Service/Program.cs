@@ -67,7 +67,7 @@ namespace Task_50_Car_Service
             Add();
         }
 
-        public int ReturnQuantity()
+        public int GetQuantity()
         {
             return _types.Count;
         }
@@ -103,19 +103,9 @@ namespace Task_50_Car_Service
         {
             Console.WriteLine("Наличие на складе: \n");
 
-            for (int i = 0; i < _typesDetal.ReturnQuantity(); i++)
+            for (int i = 0; i < _typesDetal.GetQuantity(); i++)
             {
-                int Quantity = 0;
-                string name = _typesDetal.ReturnType(i).Name;
-
-                for (int j = 0; j < _detals.Count; j++)
-                {
-                    if (name == _detals[j].Name)
-                    {
-                        Quantity++;
-                    }
-                }
-
+                int Quantity = ReturnQuantityDetal(i);
                 Console.WriteLine($"{i + 1}. {_typesDetal.ReturnType(i).Name} - {_typesDetal.ReturnType(i).Price} руб - {Quantity} шт.");
             }
         }
@@ -139,9 +129,27 @@ namespace Task_50_Car_Service
             _detals.Add(_typesDetal.ReturnType(index));
         }
 
-        public int ReturnCostDetal(int index)
+        public int ReturnCostDetal(string name = "", int index = 0)
         {
-            return _typesDetal.ReturnType(index).Price;
+            int price = 0;
+
+            if (name == "")
+            {
+                price = _typesDetal.ReturnType(index).Price;
+            }
+            else
+            {
+                for (int i = 0; i < _typesDetal.GetQuantity(); i++)
+                {
+                    if (name == _typesDetal.ReturnType(i).Name)
+                    {
+                        price = _typesDetal.ReturnType(i).Price;
+                        return price;
+                    }
+                }
+            }
+
+            return price;
         }
 
         public int ReturnQuantityDetal(int index)
@@ -162,7 +170,7 @@ namespace Task_50_Car_Service
 
         public int ReturnQuantityTypes()
         {
-            return _typesDetal.ReturnQuantity();
+            return _typesDetal.GetQuantity();
         }
 
         private void FillRandomDetals(Random random)
@@ -170,7 +178,7 @@ namespace Task_50_Car_Service
             int minQuantityDetals = 0;
             int maxQuantityDetals = 10;
 
-            for (int i = 0; i < _typesDetal.ReturnQuantity(); i++)
+            for (int i = 0; i < _typesDetal.GetQuantity(); i++)
             {
                 for (int j = 0; j < random.Next(minQuantityDetals, maxQuantityDetals); j++)
                 {
@@ -201,7 +209,7 @@ namespace Task_50_Car_Service
             }
         }
 
-        public int ReturnNumbersDetals()
+        public int ReturnQuantityDetals()
         {
             return _detals.Count();
         }
@@ -211,24 +219,24 @@ namespace Task_50_Car_Service
             _detals[index].Repair();
         }
 
-        public int FindBrokeDetals()
+        public List<Detal> ReturnListBrokenDetals()
         {
-            int numbers = 0;
+            List<Detal> detals = new List<Detal>();
 
             for (int i = 0; i < _detals.Count; i++)
             {
                 if (_detals[i].IsBroken == true)
                 {
-                    numbers++;
+                    detals.Add(_detals[i]);
                 }
             }
 
-            return numbers;
+            return detals;
         }
 
         private void AddDetals(Random random)
         {
-            for (int i = 0; i < _typesDetal.ReturnQuantity(); i++)
+            for (int i = 0; i < _typesDetal.GetQuantity(); i++)
             {
                 _detals.Add(new Detal(_typesDetal.ReturnType(i).Name, BrokeRandomDetal(random, _typesDetal.ReturnType(i).ChanceBreakdown)));
             }
@@ -247,8 +255,8 @@ namespace Task_50_Car_Service
     {
         private Random _random = new Random();
         private int _balance = 10000;
-        private int _costRepair = 700;
-        private int _fineForBrokenDetal = 1000;
+        private int _costRepair = 1000;
+        private int _fineForBrokenDetal = 2000;
         private Warehouse _warehouse;
         private Car _car;
 
@@ -269,7 +277,7 @@ namespace Task_50_Car_Service
                 switch (Console.ReadLine())
                 {
                     case "1":
-                        TakeCarForRepair();
+                        StartCarRepair();
                         break;
 
                     case "2":
@@ -287,10 +295,11 @@ namespace Task_50_Car_Service
             }
         }
 
-        public void TakeCarForRepair()
+        public void StartCarRepair()
         {
             _car = new Car(_random);
             bool isWork = true;
+            ShowRepairPrice();
 
             while (isWork)
             {
@@ -351,7 +360,7 @@ namespace Task_50_Car_Service
                 Console.WriteLine("Введите номер детали, которую необходимо заменить: ");
                 bool isNumber = int.TryParse(Console.ReadLine(), out int index);
 
-                if (isNumber == true & index - 1 < _car.ReturnNumbersDetals() & index > 0)
+                if (isNumber == true & index - 1 < _car.ReturnQuantityDetals() & index > 0)
                 {
                     if (FindDetalInStock(index - 1))
                     {
@@ -374,15 +383,15 @@ namespace Task_50_Car_Service
 
         private void FinishRepair()
         {
-            int numberBrokeDetals = _car.FindBrokeDetals();
+            int quantityBrokeDetals = _car.ReturnListBrokenDetals().Count;
 
-            if (numberBrokeDetals == 0)
+            if (quantityBrokeDetals == 0)
             {
                 Console.WriteLine("Ремонт закончен! Клиент остался доволен!");
             }
             else
             {
-                PayFine(numberBrokeDetals);
+                PayFine(quantityBrokeDetals);
             }
         }
 
@@ -402,7 +411,7 @@ namespace Task_50_Car_Service
 
         private void ReplaceDetal(int index)
         {
-            _balance += _costRepair + _warehouse.ReturnCostDetal(index);
+            _balance += _costRepair + _warehouse.ReturnCostDetal("", index);
             _car.RepairDetal(index);
             _warehouse.DeleteDetal(index);
             Console.WriteLine("Выполнено!");
@@ -424,10 +433,10 @@ namespace Task_50_Car_Service
 
                 if (isNumber == true & index - 1 < _warehouse.ReturnQuantityTypes() & index > 0)
                 {
-                    if (_warehouse.ReturnCostDetal(index - 1) <= _balance)
+                    if (_warehouse.ReturnCostDetal("", index - 1) <= _balance)
                     {
                         _warehouse.AddDetal(index - 1);
-                        _balance -= _warehouse.ReturnCostDetal(index - 1);
+                        _balance -= _warehouse.ReturnCostDetal("", index - 1);
                         Console.WriteLine("Куплено!");
                         isWork = false;
                     }
@@ -448,6 +457,19 @@ namespace Task_50_Car_Service
         private void ShowBalance()
         {
             Console.WriteLine($"Ваши финансы: {_balance} руб.");
+        }
+
+        private void ShowRepairPrice()
+        {
+            int costRepair = 0;
+
+            List<Detal> detals = _car.ReturnListBrokenDetals();
+            for (int i = 0; i < detals.Count; i++)
+            {
+                costRepair += _costRepair + _warehouse.ReturnCostDetal(detals[i].Name);
+            }
+
+            Console.WriteLine($"\nСтоимость ремонта {costRepair} руб.\n");
         }
     }
 }
