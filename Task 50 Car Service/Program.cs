@@ -295,7 +295,7 @@ namespace Task_50_Car_Service
             }
         }
 
-        public void StartCarRepair()
+        private void StartCarRepair()
         {
             _car = new Car(_random);
             bool isWork = true;
@@ -324,7 +324,7 @@ namespace Task_50_Car_Service
             }
         }
 
-        public void ShowWarehouse()
+        private void ShowWarehouse()
         {
             bool isWork = true;
 
